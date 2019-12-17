@@ -1,0 +1,4 @@
+/php54/logs/*.log
+/php7/logs/*.log
+/mysql/conf/run/*
+!/mysql/conf/run/.gitkeep
