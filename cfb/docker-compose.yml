@@ -1,0 +1,68 @@
+version: '3'
+# 定义三个服务nginx,php,mysql
+services:
+    nginx:
+        # 依赖php服务，意味着在启动nginx之前先启动php
+        depends_on:
+            - php-fpm
+        # nginx镜像的路径
+        image: openresty/openresty
+        # 这样使nginx容器把网站文件和目录存放到主机目录中，持久化和方便管理
+        volumes:
+            - /data/openresty/nginx/conf/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf
+            - /data/openresty/nginx/conf/sites:/usr/local/openresty/nginx/conf/sites
+            - /data/openresty/nginx/logs:/usr/local/openresty/nginx/logs
+            - /data/www:/data/www
+            - /data/www_upload:/data/www_upload
+        # nginx意外退出时自动重启
+        restart: always
+ 
+        # 映射80和443端口
+        ports:
+            - "80:80"
+            - "443:443"
+ 
+        # 容器名称
+        container_name: openresty  
+    php-fpm:
+        depends_on:
+            - mysql
+#        image: php:5.6-fpm-03
+        image: registry.us-west-1.aliyuncs.com/superbuy/php:5.6-fpm 
+        restart: always
+        ports:
+            - "9000:9000"
+        volumes:
+            - /data/www:/data/www
+            - /data/www_upload:/data/www_upload
+            - /data/php/log:/data/php/log
+            - /data/php/php.ini:/usr/local/etc/php/php.ini
+            - /data/php/php-fpm.d:/usr/local/etc/php-fpm.d
+        container_name: php-fpm
+
+    php7:
+        depends_on:
+            - mysql
+        image: php7:latest
+        restart: always
+        ports:
+            - "9700:9000"
+        volumes:
+            - /data/www:/data/www
+            - /data/www_upload:/data/www_upload
+            - /data/php7/log:/usr/local/etc/php/log
+            - /data/php7/etc/php/php.ini:/usr/local/etc/php/php.ini
+            - /data/php7/etc/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf
+        container_name: php7
+
+    mysql:
+        image: mysql:5.6
+        volumes:
+            - /data/mysql/data:/var/lib/mysql
+        restart: always
+        ports: 
+            - "3306:3306"
+        # 设置MYSQL_ROOT_PASSWORD环境变量，这里是设置mysql的root密码。这里为root。
+        environment:
+            MYSQL_ROOT_PASSWORD: ks7VEK_ZWydJmrmi
+        container_name: mysql

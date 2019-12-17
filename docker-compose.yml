@@ -1,0 +1,112 @@
+version: '3'
+
+services:
+  mysql:
+#   build: ./mysql
+    image: daocloud.io/library/mysql:5.7.20
+    volumes:
+      - ./mysql/conf.d:/etc/mysql/conf.d
+      - ./mysql/data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - "3306:3306"
+    networks:
+      - lnmp
+
+  redis:
+    image: redis:3.2
+    volumes: 
+      - ./redis:/usr/local/redis
+      - ./redis/sysctl.conf:/etc/sysctl.conf 
+      - ./redis/redis.conf:/etc/redis.conf
+    ports:
+      - "6379:6379"
+    command: 
+      redis-server /etc/redis.conf
+    networks:
+      - lnmp
+
+  php54:
+    image: daocloud.io/library/php:5.4.45-fpm
+#  # 使用宿主：容器 （HOST:CONTAINER）格式或者仅仅指定容器的端口（宿主将会随机选择端口）都可以
+#  # 开放9000端口
+    ports:
+      - "9054:9000"
+#  # 此处实现文件夹代码目录映射
+    volumes:
+      - ../:/data
+      - ./php54/hosts:/etc/hosts
+      - ./php54/etc/php/php.ini:/usr/local/etc/php/php.ini
+      - ./php54/etc/php-fpm.conf:/usr/local/etc/php-fpm.conf
+    links:
+      - redis
+      - mysql
+    privileged: true
+    networks:
+      - lnmp
+
+  php56:
+    image: daocloud.io/library/php:5.6-fpm
+#  # 使用宿主：容器 （HOST:CONTAINER）格式或者仅仅指定容器的端口（宿主将会随机选择端口）都可以
+#  # 开放9000端口
+    ports:
+      - "9056:9000"
+#  # 此处实现文件夹代码目录映射
+    volumes:
+      - ../:/data
+      - ./php56/hosts:/etc/hosts
+      - ./php56/etc/php/php.ini:/usr/local/etc/php/php.ini
+      - ./php56/etc/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf
+    links:
+      - redis
+      - mysql
+    privileged: true
+    networks:
+      - lnmp
+
+  php7:
+    #image: daocloud.io/library/php:7.1-fpm-alpine
+    image: daocloud.io/library/php:7.1-fpm
+    #使用宿主：容器 （HOST:CONTAINER）格式或者仅仅指定容器的端口（宿主将会随机选择端口）都可以
+    ports:
+      - "9007:9000"
+  # 此处实现文件夹代码目录映射
+    volumes:
+      - ../:/data
+      - ./php7/hosts:/etc/hosts
+      - ./php7/etc/php/php.ini:/usr/local/etc/php/php.ini
+      - ./php7/etc/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf
+    links:
+      - redis
+      - mysql
+    privileged: true
+    networks:
+      - lnmp
+
+  nginx:
+    
+#    image: nginx:file
+    build: ./nginx
+  # 此处实现文件夹代码目录映射
+    volumes:
+      - ../:/data
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/php.conf:/etc/nginx/php.conf
+      - ./nginx/fastcgi.conf:/etc/nginx/fastcgi.conf
+      - ./php7/hosts:/etc/hosts
+  # 链接其他docker容器实例
+    links:
+#      - php54:php54
+#      - php56:php56
+      - php7:php7
+    privileged: true
+    ports:
+      - "80:80"
+      - "8081:8081" 
+    networks:
+      - lnmp
+
+networks:
+  lnmp:
+    driver: bridge
